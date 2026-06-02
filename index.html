@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legalwise SMS Dashboard - May 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #222635; --border: #2e3347;
+    --text: #e8eaf0; --muted: #7b82a0;
+    --teal: #0fb8a0; --blue: #3b82f6; --orange: #f97316; --red: #ef4444;
+    --green: #22c55e; --yellow: #eab308; --purple: #a855f7;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:24px; }
+
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+  .header-left h1 { font-size:22px; font-weight:700; letter-spacing:-0.4px; }
+  .header-left p { font-size:13px; color:var(--muted); margin-top:4px; font-family:'DM Mono',monospace; }
+  .badge { background:rgba(15,184,160,0.15); color:var(--teal); border:1px solid var(--teal); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+
+  .section-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; margin-top:22px; }
+
+  .kpi-grid-8 { display:grid; grid-template-columns:repeat(8,1fr); gap:10px; margin-bottom:6px; }
+  .kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; position:relative; overflow:hidden; transition:border-color 0.2s; }
+  .kpi:hover { border-color:var(--teal); }
+  .kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--accent,var(--teal)); }
+  .kpi-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; font-weight:600; margin-bottom:6px; }
+  .kpi-value { font-size:20px; font-weight:700; font-family:'DM Mono',monospace; line-height:1; }
+  .kpi-sub { font-size:10px; color:var(--muted); margin-top:5px; }
+  .kpi-sub.up { color:var(--green); } .kpi-sub.down { color:var(--red); } .kpi-sub.warn { color:var(--orange); }
+
+  .charts-main { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:14px; }
+  .charts-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+  .charts-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; }
+  .card-title { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px; }
+  .card canvas { max-height:200px; }
+
+  .legend { margin-top:12px; }
+  .legend-item { display:flex; align-items:center; gap:8px; margin-bottom:7px; font-size:12px; }
+  .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .legend-name { color:var(--text); flex:1; }
+  .legend-val { color:var(--muted); font-family:'DM Mono',monospace; font-size:11px; }
+
+  .table-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:14px; }
+  .table-header-bar { padding:14px 18px 10px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; }
+  table { width:100%; border-collapse:collapse; }
+  th { padding:9px 14px; font-size:10px; color:var(--muted); text-align:left; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; background:var(--surface2); border-bottom:1px solid var(--border); }
+  td { padding:9px 14px; font-size:12px; color:var(--text); border-bottom:1px solid var(--border); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--surface2); }
+  td.mono { font-family:'DM Mono',monospace; }
+
+  .pill { display:inline-block; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:700; }
+  .pill-high { background:rgba(239,68,68,0.15); color:var(--red); }
+  .pill-med  { background:rgba(249,115,22,0.15); color:var(--orange); }
+  .pill-low  { background:rgba(34,197,94,0.15); color:var(--green); }
+  .pill-blue { background:rgba(59,130,246,0.15); color:var(--blue); }
+
+  .insights { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
+  .insight { background:var(--surface2); border-left:3px solid var(--accent,var(--teal)); border-radius:0 8px 8px 0; padding:12px 14px; font-size:12px; line-height:1.5; }
+  .insight strong { color:var(--teal); }
+
+  footer { text-align:center; font-size:11px; color:var(--muted); margin-top:20px; padding-top:14px; border-top:1px solid var(--border); font-family:'DM Mono',monospace; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Legalwise SMS Analytics Dashboard</h1>
+    <p>01 May 2026 - 02 Jun 2026 &nbsp;·&nbsp; 34 Campaigns &nbsp;·&nbsp; Sinch MessageMedia</p>
+  </div>
+  <span class="badge">MAY 2026</span>
+</div>
+
+<!-- KPIs -->
+<div class="section-title">Overall Performance</div>
+<div class="kpi-grid-8">
+  <div class="kpi" style="--accent:#0fb8a0"><div class="kpi-label">Sent (Outbound)</div><div class="kpi-value">58,414</div><div class="kpi-sub">34 campaigns</div></div>
+  <div class="kpi" style="--accent:#22c55e"><div class="kpi-label">Delivered</div><div class="kpi-value">51,606</div><div class="kpi-sub up">88.3% rate</div></div>
+  <div class="kpi" style="--accent:#ef4444"><div class="kpi-label">Undelivered</div><div class="kpi-value">6,111</div><div class="kpi-sub down">10.5% failure</div></div>
+  <div class="kpi" style="--accent:#f97316"><div class="kpi-label">Opt-outs</div><div class="kpi-value">1,149</div><div class="kpi-sub warn">2% opt-out rate</div></div>
+  <div class="kpi" style="--accent:#3b82f6"><div class="kpi-label">Inbound Replies</div><div class="kpi-value">1,183</div><div class="kpi-sub">Received</div></div>
+  <div class="kpi" style="--accent:#eab308"><div class="kpi-label">Billing Units</div><div class="kpi-value">56,957</div><div class="kpi-sub">Charged parts</div></div>
+  <div class="kpi" style="--accent:#a855f7"><div class="kpi-label">Registrations</div><div class="kpi-value">36</div><div class="kpi-sub up">SMS attributed</div></div>
+  <div class="kpi" style="--accent:#22c55e"><div class="kpi-label">SMS Revenue</div><div class="kpi-value">$12,097</div><div class="kpi-sub up">Attributed</div></div>
+</div>
+
+<!-- DELIVERY CHARTS -->
+<div class="section-title">Delivery Performance</div>
+<div class="charts-main">
+  <div class="card">
+    <div class="card-title">Delivered vs Undelivered by Week</div>
+    <canvas id="deliveryChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Undelivered Breakdown</div>
+    <canvas id="donutChart" style="max-height:170px"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#f9b4b4"></div><span class="legend-name">Expired</span><span class="legend-val">1,783 (29%)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div><span class="legend-name">Failed</span><span class="legend-val">2,744 (45%)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#374151"></div><span class="legend-name">Rejected</span><span class="legend-val">1,584 (26%)</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="charts-row3">
+  <div class="card">
+    <div class="card-title">Weekly Failure Rate %</div>
+    <canvas id="failureChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Daily Outbound Volume</div>
+    <canvas id="volumeChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Inbound vs Outbound Trend</div>
+    <canvas id="trendChart"></canvas>
+  </div>
+</div>
+
+<!-- CAMPAIGN TABLE -->
+<div class="section-title">Campaign List (34 Campaigns)</div>
+<div class="table-card">
+  <div class="table-header-bar">All campaigns - May 2026</div>
+  <table>
+    <thead><tr><th>Campaign</th><th>Date Sent</th><th>Content</th><th>Recipients</th><th>Delivered</th><th>Delivery Rate</th></tr></thead>
+    <tbody>
+      <tr><td>Budget AUS Everyone 14.05.26</td><td class="mono">14 May</td><td>Budget 2026 is here. Clients will have questions...</td><td class="mono">26,800</td><td class="mono">23,208</td><td><span class="pill pill-med">86.6%</span></td></tr>
+      <tr><td>New Message, 21 May - Native Title</td><td class="mono">21 May</td><td>The leading Native Title Conference returns June 18...</td><td class="mono">1,814</td><td class="mono">1,606</td><td><span class="pill pill-med">88.5%</span></td></tr>
+      <tr><td>New Message, 21 May - Psych Injury</td><td class="mono">21 May</td><td>Psych injury claims harder to defend? Reforms...</td><td class="mono">1,221</td><td class="mono">1,126</td><td><span class="pill pill-med">92.2%</span></td></tr>
+      <tr><td>New Message, 21 May - OHS</td><td class="mono">21 May</td><td>New OHS regulations, Kozarov, Elisha & psychiatric...</td><td class="mono">1,107</td><td class="mono">1,007</td><td><span class="pill pill-med">90.9%</span></td></tr>
+      <tr><td>New Message, 21 May - Conveyancing</td><td class="mono">21 May</td><td>New to conveyancing? Get the fundamentals right...</td><td class="mono">1,934</td><td class="mono">1,811</td><td><span class="pill pill-low">93.6%</span></td></tr>
+      <tr><td>New Message, 21 May - Wills</td><td class="mono">21 May</td><td>Notional estates, estoppel, family provision...</td><td class="mono">3,189</td><td class="mono">3,004</td><td><span class="pill pill-low">94.2%</span></td></tr>
+      <tr><td>New Message, 22 May - EP&A Act</td><td class="mono">22 May</td><td>Last chance - New EP&A Act changes, consent powers...</td><td class="mono">217</td><td class="mono">199</td><td><span class="pill pill-med">91.7%</span></td></tr>
+      <tr><td>New Message, 26 May - Vicarious Trauma</td><td class="mono">26 May</td><td>TODAY, 12PM - Vicarious trauma in practice...</td><td class="mono">900</td><td class="mono">798</td><td><span class="pill pill-med">88.7%</span></td></tr>
+      <tr><td>New Message, 27 May - Div 7A</td><td class="mono">27 May</td><td>Unsure on Div 7A? Get updates across loans...</td><td class="mono">3,294</td><td class="mono">3,041</td><td><span class="pill pill-low">92.3%</span></td></tr>
+      <tr><td>New Message, 27 May - DBP Act</td><td class="mono">27 May</td><td>Getting caught out post-Pafburn? Updates to DBP Act...</td><td class="mono">261</td><td class="mono">246</td><td><span class="pill pill-low">94.3%</span></td></tr>
+      <tr><td>28.05.26 WILLS SKILLS AUSTRALIA</td><td class="mono">28 May</td><td>Strengthen foundations & real-world skills in drafting...</td><td class="mono">2,595</td><td class="mono">2,079</td><td><span class="pill pill-high">80.1%</span></td></tr>
+      <tr><td>28.05.26 WILLS PROVISION CLAIMS</td><td class="mono">28 May</td><td>Fix family provision claims. Strategy, notional estates...</td><td class="mono">1,469</td><td class="mono">1,182</td><td><span class="pill pill-high">80.5%</span></td></tr>
+      <tr><td>Wellbeing By Design (SUPPORT STAFF)</td><td class="mono">1 Jun</td><td>TOMORROW: Burnout, stress & anxiety are rising...</td><td class="mono">453</td><td class="mono">393</td><td><span class="pill pill-med">86.8%</span></td></tr>
+      <tr><td>Retail and Commercial Leasing (PROPERTY NSW)</td><td class="mono">1 Jun</td><td>Drafting traps & dispute risk in retail & commercial leasing...</td><td class="mono">1,765</td><td class="mono">1,667</td><td><span class="pill pill-low">94.4%</span></td></tr>
+      <tr><td>Psychosocial (NON LAW)</td><td class="mono">1 Jun</td><td>Psychosocial risk now a legal obligation. On WEDNESDAY...</td><td class="mono">11,100</td><td class="mono">10,126</td><td><span class="pill pill-low">91.2%</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- REVENUE CHARTS -->
+<div class="section-title">Revenue and Registrations</div>
+<div class="charts-row2">
+  <div class="card">
+    <div class="card-title">Revenue by Practice Area</div>
+    <canvas id="revenueChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Top 6 Seminars by Revenue</div>
+    <canvas id="seminarChart"></canvas>
+  </div>
+</div>
+
+<!-- REGISTRATION TABLE -->
+<div class="table-card">
+  <div class="table-header-bar">SMS Registrations - 36 registrations · $12,097.50 total revenue</div>
+  <table>
+    <thead><tr><th>Contact</th><th>Seminar</th><th>Campaign</th><th>Revenue</th><th>Msg Match</th></tr></thead>
+    <tbody>
+      <tr><td>Celeste Shambrook</td><td>Psychiatric and Psychological Injury</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Antonia Gianasmidis</td><td>Psychiatric and Psychological Injury</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Irini Piperoglou</td><td>Psychiatric and Psychological Injury</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Akos Osei</td><td>Psychiatric and Psychological Injury</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Ahmed Kheir</td><td>Workers Compensation: Psych Claims</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Pania Watt</td><td>Workers Compensation: Psych Claims</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Jessica Seymour</td><td>Workers Compensation: Psych Claims</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Bryan Keon-Cohen AM KC</td><td>16th Annual Native Title Conference</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Michael Owens</td><td>16th Annual Native Title Conference</td><td class="mono">SMS</td><td class="mono">$795.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Juliette Halliday</td><td>16th Annual Native Title Conference</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Shellie Graham</td><td>Conveyancing Fundamentals</td><td class="mono">SMS</td><td class="mono">$505.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Veronica Careaga</td><td>Conveyancing Fundamentals</td><td class="mono">SMS</td><td class="mono">$353.50</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Ross Selvaggio</td><td>Conveyancing Fundamentals</td><td class="mono">SMS</td><td class="mono">$505.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Tracey Fletcher</td><td>Conveyancing Fundamentals</td><td class="mono">SMS</td><td class="mono">$505.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Dale Brown</td><td>The Commercial Litigator</td><td class="mono">SMS</td><td class="mono">$795.00</td><td><span class="pill pill-med">No Msg</span></td></tr>
+      <tr><td>Dale Brown</td><td>Ethics, Professional Skills</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-med">No Msg</span></td></tr>
+      <tr><td>Carla Di Giusto</td><td>Mining Law: Litigation Risks</td><td class="mono">SMS</td><td class="mono">$795.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Carla Di Giusto</td><td>Native Title Law Intensive</td><td class="mono">SMS</td><td class="mono">$505.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Carla Di Giusto</td><td>Native Title Mediation</td><td class="mono">SMS</td><td class="mono">$160.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Allison Rowe</td><td>Family Law and Div 7A Intensive 2026</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Olivia Terziovski</td><td>Contract Disputes Intensive</td><td class="mono">SMS</td><td class="mono">$420.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Dmitry Fedorov</td><td>Lookalikes in the Market: IP Regimes</td><td class="mono">SMS</td><td class="mono">$126.25</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Dmitry Fedorov</td><td>Prior Use and Trade Marks</td><td class="mono">SMS</td><td class="mono">$126.25</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Dmitry Fedorov</td><td>Expanding Overseas: Trade Mark</td><td class="mono">SMS</td><td class="mono">$126.25</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Dmitry Fedorov</td><td>Trademark Revocations</td><td class="mono">SMS</td><td class="mono">$126.25</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Malcolm Jones</td><td>Protecting Global Brands</td><td class="mono">SMS</td><td class="mono">$160.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Dae OH</td><td>Key Developments in Patentability</td><td class="mono">SMS</td><td class="mono">$160.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Natalie Williams</td><td>Ethics for Trade Mark & Patent Attorneys</td><td class="mono">SMS</td><td class="mono">$160.00</td><td><span class="pill pill-med">Broken Msg</span></td></tr>
+      <tr><td>Taryn Tyas</td><td>Managing WHS in Your School</td><td class="mono">SMS</td><td class="mono">$160.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Jess Smith</td><td>Key Developments in Patentability</td><td class="mono">SMS</td><td class="mono">$160.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Tracy Riddle</td><td>Environment Protection Reform Act</td><td class="mono">SMS</td><td class="mono">$160.00</td><td><span class="pill pill-low">Matched</span></td></tr>
+      <tr><td>Andrew Gunter</td><td>Offsets and First Nations Engagement</td><td class="mono">SMS</td><td class="mono">$118.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Andrew Gunter</td><td>Environment Protection Reform Act</td><td class="mono">SMS</td><td class="mono">$118.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Andrew Gunter</td><td>Climate and Land Impacts EPBC</td><td class="mono">SMS</td><td class="mono">$118.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Lucinda Howard</td><td>WA Environmental Law</td><td class="mono">EB</td><td class="mono">$160.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+      <tr><td>Lucinda Howard</td><td>Offsets and First Nations Engagement</td><td class="mono">EB</td><td class="mono">$160.00</td><td><span class="pill pill-high">Mismatch</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- INSIGHTS -->
+<div class="section-title">Key Insights</div>
+<div class="insights">
+  <div class="insight" style="--accent:#22c55e"><strong>Delivery improving.</strong> Best week was 31 May - 2 Jun at only 4% failure rate vs 14% earlier in the month. Cleaned lists are working.</div>
+  <div class="insight" style="--accent:#ef4444"><strong>45% of failures are "Failed"</strong> likely bad or disconnected numbers. DNC filtering before every send will keep reducing this.</div>
+  <div class="insight" style="--accent:#f97316"><strong>1,149 opt-outs (2%).</strong> Healthy but worth monitoring. Remove STOP replies from all lists immediately after each campaign.</div>
+  <div class="insight" style="--accent:#3b82f6"><strong>Budget AUS campaign 14 May</strong> was the biggest send at 26.8k recipients but only 86.6% delivery rate. Smaller targeted sends are performing better.</div>
+  <div class="insight" style="--accent:#a855f7"><strong>$12,097 revenue from 36 registrations.</strong> Native Title and Psych Injury are the top categories. Matched messages convert better than mismatched ones.</div>
+  <div class="insight" style="--accent:#eab308"><strong>Wills sends on 28 May had low delivery</strong> at 80% - the lowest of any named campaign. Worth checking if those lists had been cleaned before sending.</div>
+</div>
+
+<footer>Legalwise Seminars &nbsp;·&nbsp; SMS Analytics Dashboard &nbsp;·&nbsp; May 2026 &nbsp;·&nbsp; Sinch MessageMedia &nbsp;·&nbsp; 34 Campaigns</footer>
+
+<script>
+const gc='rgba(255,255,255,0.05)', lc='#7b82a0';
+Chart.defaults.color=lc; Chart.defaults.font.family='DM Sans';
+
+// Delivered vs Undelivered by week
+new Chart(document.getElementById('deliveryChart'),{
+  type:'bar',
+  data:{
+    labels:['Apr 27-May 3','May 4-10','May 11-17','May 18-24','May 25-31','Jun 1-7'],
+    datasets:[
+      {label:'Delivered',data:[0,0,23000,9500,7500,12000],backgroundColor:'#22c55e',borderRadius:3,stack:'a'},
+      {label:'Undelivered',data:[0,0,3500,400,800,400],backgroundColor:'#ef4444',borderRadius:3,stack:'a'}
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}},stacked:true},y:{grid:{color:gc},ticks:{font:{size:9}},stacked:true}}}
+});
+
+// Donut
+new Chart(document.getElementById('donutChart'),{
+  type:'doughnut',
+  data:{labels:['Expired','Failed','Rejected'],datasets:[{data:[1783,2744,1584],backgroundColor:['#f9b4b4','#f97316','#374151'],borderWidth:0}]},
+  options:{responsive:true,cutout:'70%',plugins:{legend:{display:false}}}
+});
+
+// Failure rate
+new Chart(document.getElementById('failureChart'),{
+  type:'bar',
+  data:{labels:['10-18 May','17-23 May','24-30 May','31 May-2 Jun'],datasets:[{data:[14,8,13,4],backgroundColor:['#ef4444','#f97316','#ef4444','#22c55e'],borderRadius:4}]},
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{callback:v=>v+'%',font:{size:9}},max:16}}}
+});
+
+// Daily volume
+new Chart(document.getElementById('volumeChart'),{
+  type:'line',
+  data:{
+    labels:['1 May','5','9','13','14','15','19','21','22','25','27','28','30','1 Jun','2'],
+    datasets:[{label:'Outbound',data:[0,0,0,500,26800,0,1000,8264,0,3500,3555,4064,0,13318,500],borderColor:'#0fb8a0',backgroundColor:'rgba(15,184,160,0.07)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#0fb8a0',borderWidth:2}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{maxRotation:45,font:{size:9}}},y:{grid:{color:gc},ticks:{font:{size:9}}}}}
+});
+
+// Trend
+new Chart(document.getElementById('trendChart'),{
+  type:'line',
+  data:{
+    labels:['1-10 May','11-17 May','18-24 May','25-31 May','1-2 Jun'],
+    datasets:[
+      {label:'Outbound',data:[500,27000,9500,9500,13318],borderColor:'#0fb8a0',backgroundColor:'transparent',tension:0.3,pointRadius:4,borderWidth:2},
+      {label:'Inbound',data:[50,350,280,350,153],borderColor:'#3b82f6',backgroundColor:'transparent',tension:0.3,pointRadius:4,borderWidth:2,borderDash:[4,4]}
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{font:{size:9}}}}}
+});
+
+// Revenue by practice area
+new Chart(document.getElementById('revenueChart'),{
+  type:'bar',
+  data:{
+    labels:['Native Title\n/ Mining','Psych Injury\n/ Workers Comp','Conveyancing','Commercial\n/ Ethics','Patent &\nTrade Mark','Environment\n/ EPBC','Family Law'],
+    datasets:[{label:'Revenue ($)',data:[3095,2940,1868.5,1635,1145,834,420],backgroundColor:['#0fb8a0','#3b82f6','#a855f7','#f97316','#eab308','#22c55e','#ef4444'],borderRadius:4}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}}}}}
+});
+
+// Top seminars
+new Chart(document.getElementById('seminarChart'),{
+  type:'bar',
+  data:{
+    labels:['Conveyancing\nFundamentals','Psych Injury:\nNew Reforms','Native Title\nConference','Workers Comp:\nPsych Claims','Commercial\nLitigator','Mining Law:\nLitigation'],
+    datasets:[{label:'Revenue ($)',data:[1868.5,1680,1635,1260,795,795],backgroundColor:'#0fb8a0',borderRadius:4}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}}}}}
+});
+</script>
+</body>
+</html>
