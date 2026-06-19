@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legalwise SMS Dashboard - 15-19 June 2026 (EOFY)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #222635; --border: #2e3347;
+    --text: #e8eaf0; --muted: #7b82a0;
+    --teal: #0fb8a0; --blue: #3b82f6; --orange: #f97316; --red: #ef4444;
+    --green: #22c55e; --yellow: #eab308; --purple: #a855f7;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:24px; }
+
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+  .header-left h1 { font-size:22px; font-weight:700; letter-spacing:-0.4px; }
+  .header-left p { font-size:13px; color:var(--muted); margin-top:4px; font-family:'DM Mono',monospace; }
+  .badge { background:rgba(249,115,22,0.15); color:var(--orange); border:1px solid var(--orange); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+
+  .section-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; margin-top:22px; }
+
+  .kpi-grid-8 { display:grid; grid-template-columns:repeat(8,1fr); gap:10px; margin-bottom:6px; }
+  .kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; position:relative; overflow:hidden; transition:border-color 0.2s; }
+  .kpi:hover { border-color:var(--teal); }
+  .kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--accent,var(--teal)); }
+  .kpi-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; font-weight:600; margin-bottom:6px; }
+  .kpi-value { font-size:20px; font-weight:700; font-family:'DM Mono',monospace; line-height:1; }
+  .kpi-sub { font-size:10px; color:var(--muted); margin-top:5px; }
+  .kpi-sub.up { color:var(--green); } .kpi-sub.down { color:var(--red); } .kpi-sub.warn { color:var(--orange); }
+
+  .charts-main { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:14px; }
+  .charts-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+  .charts-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; }
+  .card-title { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:14px; }
+  .card canvas { max-height:200px; }
+
+  .legend { margin-top:12px; }
+  .legend-item { display:flex; align-items:center; gap:8px; margin-bottom:7px; font-size:12px; }
+  .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .legend-name { color:var(--text); flex:1; }
+  .legend-val { color:var(--muted); font-family:'DM Mono',monospace; font-size:11px; }
+
+  .table-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:14px; }
+  .table-header-bar { padding:14px 18px 10px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; }
+  table { width:100%; border-collapse:collapse; }
+  th { padding:9px 14px; font-size:10px; color:var(--muted); text-align:left; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; background:var(--surface2); border-bottom:1px solid var(--border); }
+  td { padding:9px 14px; font-size:12px; color:var(--text); border-bottom:1px solid var(--border); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--surface2); }
+  td.mono { font-family:'DM Mono',monospace; }
+
+  .pill { display:inline-block; padding:2px 7px; border-radius:20px; font-size:10px; font-weight:700; }
+  .pill-high { background:rgba(239,68,68,0.15); color:var(--red); }
+  .pill-med  { background:rgba(249,115,22,0.15); color:var(--orange); }
+  .pill-low  { background:rgba(34,197,94,0.15); color:var(--green); }
+  .pill-blue { background:rgba(59,130,246,0.15); color:var(--blue); }
+  .pill-gen  { background:rgba(123,130,160,0.18); color:var(--muted); }
+
+  .insights { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
+  .insight { background:var(--surface2); border-left:3px solid var(--accent,var(--teal)); border-radius:0 8px 8px 0; padding:12px 14px; font-size:12px; line-height:1.5; }
+  .insight strong { color:var(--teal); }
+
+  footer { text-align:center; font-size:11px; color:var(--muted); margin-top:20px; padding-top:14px; border-top:1px solid var(--border); font-family:'DM Mono',monospace; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Legalwise EOFY 2026 — SMS Analytics Dashboard</h1>
+    <p>15 Jun 2026 - 19 Jun 2026 &nbsp;·&nbsp; 19 broadcasts (266AU) &nbsp;·&nbsp; 30% off, ends 30 June &nbsp;·&nbsp; Sinch MessageMedia</p>
+  </div>
+  <span class="badge">EOFY · JUN 15-19</span>
+</div>
+
+<!-- KPIs -->
+<div class="section-title">Overall Performance</div>
+<div class="kpi-grid-8">
+  <div class="kpi" style="--accent:#0fb8a0"><div class="kpi-label">Sent (Outbound)</div><div class="kpi-value">61,141</div><div class="kpi-sub">19 broadcasts</div></div>
+  <div class="kpi" style="--accent:#22c55e"><div class="kpi-label">Delivered</div><div class="kpi-value">55,131</div><div class="kpi-sub up">90.2% rate</div></div>
+  <div class="kpi" style="--accent:#ef4444"><div class="kpi-label">Undelivered</div><div class="kpi-value">3,841</div><div class="kpi-sub down">6.3% failure</div></div>
+  <div class="kpi" style="--accent:#f97316"><div class="kpi-label">Opt-outs</div><div class="kpi-value">1,153</div><div class="kpi-sub warn">1.9% opt-out rate</div></div>
+  <div class="kpi" style="--accent:#3b82f6"><div class="kpi-label">Link Clicks</div><div class="kpi-value">354</div><div class="kpi-sub up">0.64% CTR (vs del.)</div></div>
+  <div class="kpi" style="--accent:#eab308"><div class="kpi-label">Inbound Replies</div><div class="kpi-value">1,188</div><div class="kpi-sub">Received</div></div>
+  <div class="kpi" style="--accent:#a855f7"><div class="kpi-label">Registrations</div><div class="kpi-value">42</div><div class="kpi-sub up">SMS attributed</div></div>
+  <div class="kpi" style="--accent:#22c55e"><div class="kpi-label">SMS Revenue</div><div class="kpi-value">$11,412</div><div class="kpi-sub up">Attributed</div></div>
+</div>
+
+<!-- DELIVERY CHARTS -->
+<div class="section-title">Delivery Performance</div>
+<div class="charts-main">
+  <div class="card">
+    <div class="card-title">Delivered vs Undelivered by Day</div>
+    <canvas id="deliveryChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Delivery Outcome Split</div>
+    <canvas id="donutChart" style="max-height:170px"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div><span class="legend-name">Delivered</span><span class="legend-val">55,131 (90.2%)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div><span class="legend-name">Undelivered</span><span class="legend-val">3,841 (6.3%)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#374151"></div><span class="legend-name">Opt-outs</span><span class="legend-val">1,153 (1.9%)</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="charts-row3">
+  <div class="card">
+    <div class="card-title">Daily Delivery Rate %</div>
+    <canvas id="rateChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Daily Outbound Volume</div>
+    <canvas id="volumeChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Inbound vs Outbound Trend</div>
+    <canvas id="trendChart"></canvas>
+  </div>
+</div>
+
+<!-- GROUP PERFORMANCE -->
+<div class="section-title">Performance by Send Type</div>
+<div class="charts-row2">
+  <div class="card">
+    <div class="card-title">Delivered by Group (General · Targeted)</div>
+    <canvas id="groupChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Click Rate % by Group</div>
+    <canvas id="ctrChart"></canvas>
+  </div>
+</div>
+
+<!-- CAMPAIGN TABLE -->
+<div class="section-title">Campaign List (19 Broadcasts)</div>
+<div class="table-card">
+  <div class="table-header-bar">All EOFY SMS broadcasts — 15-19 June 2026</div>
+  <table>
+    <thead><tr><th>Campaign</th><th>Date</th><th>Group</th><th>Audience</th><th>Delivered</th><th>Del. Rate</th><th>Clicks</th><th>Opt-outs</th></tr></thead>
+    <tbody>
+      <tr><td>Trademarks &amp; Patent CPE</td><td class="mono">15 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">1,099</td><td class="mono">1,031</td><td><span class="pill pill-low">93.8%</span></td><td class="mono">12</td><td class="mono">13</td></tr>
+      <tr><td>General TAS</td><td class="mono">15 Jun</td><td><span class="pill pill-gen">General</span></td><td class="mono">194</td><td class="mono">185</td><td><span class="pill pill-low">95.4%</span></td><td class="mono">0</td><td class="mono">2</td></tr>
+      <tr><td>General NT</td><td class="mono">15 Jun</td><td><span class="pill pill-gen">General</span></td><td class="mono">153</td><td class="mono">132</td><td><span class="pill pill-high">86.3%</span></td><td class="mono">3</td><td class="mono">5</td></tr>
+      <tr><td>General ACT</td><td class="mono">15 Jun</td><td><span class="pill pill-gen">General</span></td><td class="mono">735</td><td class="mono">656</td><td><span class="pill pill-med">89.3%</span></td><td class="mono">7</td><td class="mono">22</td></tr>
+      <tr><td>General SA</td><td class="mono">15 Jun</td><td><span class="pill pill-gen">General</span></td><td class="mono">1,398</td><td class="mono">1,283</td><td><span class="pill pill-med">91.8%</span></td><td class="mono">13</td><td class="mono">34</td></tr>
+      <tr><td>General QLD</td><td class="mono">15 Jun</td><td><span class="pill pill-gen">General</span></td><td class="mono">4,818</td><td class="mono">4,280</td><td><span class="pill pill-med">88.8%</span></td><td class="mono">29</td><td class="mono">—</td></tr>
+      <tr><td>General VIC</td><td class="mono">15 Jun</td><td><span class="pill pill-gen">General</span></td><td class="mono">7,344</td><td class="mono">6,516</td><td><span class="pill pill-med">88.7%</span></td><td class="mono">43</td><td class="mono">104</td></tr>
+      <tr><td>General NSW</td><td class="mono">15 Jun</td><td><span class="pill pill-gen">General</span></td><td class="mono">10,675</td><td class="mono">9,511</td><td><span class="pill pill-med">89.1%</span></td><td class="mono">51</td><td class="mono">168</td></tr>
+      <tr><td>General WA</td><td class="mono">15 Jun</td><td><span class="pill pill-gen">General</span></td><td class="mono">2,362</td><td class="mono">2,161</td><td><span class="pill pill-med">91.5%</span></td><td class="mono">24</td><td class="mono">33</td></tr>
+      <tr><td>Targets — Construction</td><td class="mono">16 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">416</td><td class="mono">386</td><td><span class="pill pill-low">92.8%</span></td><td class="mono">4</td><td class="mono">5</td></tr>
+      <tr><td>Targets — Banking &amp; Finance</td><td class="mono">16 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">1,551</td><td class="mono">1,422</td><td><span class="pill pill-med">91.7%</span></td><td class="mono">5</td><td class="mono">—</td></tr>
+      <tr><td>Targets — Admin &amp; Gov</td><td class="mono">16 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">3,359</td><td class="mono">2,964</td><td><span class="pill pill-med">88.2%</span></td><td class="mono">13</td><td class="mono">—</td></tr>
+      <tr><td>Targets — Family Law</td><td class="mono">16 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">7,825</td><td class="mono">7,144</td><td><span class="pill pill-med">91.3%</span></td><td class="mono">26</td><td class="mono">—</td></tr>
+      <tr><td>Targets — Consumer Law</td><td class="mono">17 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">4,861</td><td class="mono">4,469</td><td><span class="pill pill-med">91.9%</span></td><td class="mono">30</td><td class="mono">—</td></tr>
+      <tr><td>Targets — Native Title</td><td class="mono">17 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">2,683</td><td class="mono">2,403</td><td><span class="pill pill-med">89.6%</span></td><td class="mono">21</td><td class="mono">—</td></tr>
+      <tr><td>Targets — Employment</td><td class="mono">18 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">3,298</td><td class="mono">2,982</td><td><span class="pill pill-med">90.4%</span></td><td class="mono">22</td><td class="mono">60</td></tr>
+      <tr><td>Targets — Succession &amp; Elder</td><td class="mono">18 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">3,416</td><td class="mono">3,165</td><td><span class="pill pill-low">92.7%</span></td><td class="mono">33</td><td class="mono">41</td></tr>
+      <tr><td>Targets — Personal Injury</td><td class="mono">19 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">2,287</td><td class="mono">2,035</td><td><span class="pill pill-med">89.0%</span></td><td class="mono">9</td><td class="mono">61</td></tr>
+      <tr><td>Targets — Business Law</td><td class="mono">19 Jun</td><td><span class="pill pill-blue">Targeted</span></td><td class="mono">2,654</td><td class="mono">2,388</td><td><span class="pill pill-med">90.0%</span></td><td class="mono">9</td><td class="mono">—</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- REVENUE CHARTS -->
+<div class="section-title">Revenue and Registrations</div>
+<div class="charts-row2">
+  <div class="card">
+    <div class="card-title">Revenue by Attributed Campaign</div>
+    <canvas id="campaignRevChart" style="max-height:260px"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Top Seminars by Revenue</div>
+    <canvas id="seminarChart" style="max-height:260px"></canvas>
+  </div>
+</div>
+
+<div class="charts-row2">
+  <div class="card">
+    <div class="card-title">Revenue by Day (Registrations)</div>
+    <canvas id="revDayChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Registrations by Attributed Campaign</div>
+    <canvas id="campaignRegChart"></canvas>
+  </div>
+</div>
+
+<!-- PER CAMPAIGN BREAKDOWN -->
+<div class="section-title">Revenue per Campaign (Attributed by SMS Copy Received)</div>
+<div class="table-card">
+  <div class="table-header-bar">Per Campaign Breakdown — Revenue, Registrations, Delivered, Rev/Delivered</div>
+  <table>
+    <thead>
+      <tr><th>Attributed Campaign</th><th>Date(s)</th><th>Delivered</th><th>Regs</th><th>Revenue</th><th>Rev / Delivered</th></tr>
+    </thead>
+    <tbody>
+      <tr style="background:rgba(15,184,160,0.06)">
+        <td><strong>Native Title (Targeted)</strong></td><td class="mono">17 Jun</td><td class="mono">2,403</td>
+        <td class="mono"><strong>9</strong></td><td class="mono"><strong>$4,108.50</strong></td><td class="mono">$1.71</td>
+      </tr>
+      <tr style="background:rgba(15,184,160,0.06)">
+        <td><strong>General State Blast (8 states)</strong></td><td class="mono">15 Jun</td><td class="mono">24,724</td>
+        <td class="mono"><strong>16</strong></td><td class="mono"><strong>$3,782.10</strong></td><td class="mono">$0.15</td>
+      </tr>
+      <tr style="background:rgba(15,184,160,0.06)">
+        <td><strong>Family Law (Targeted)</strong></td><td class="mono">16 Jun</td><td class="mono">7,144</td>
+        <td class="mono"><strong>5</strong></td><td class="mono"><strong>$1,669.50</strong></td><td class="mono">$0.23</td>
+      </tr>
+      <tr>
+        <td>Consumer Law (Targeted)</td><td class="mono">17 Jun</td><td class="mono">4,469</td>
+        <td class="mono">6</td><td class="mono">$574.00</td><td class="mono">$0.13</td>
+      </tr>
+      <tr>
+        <td>Construction (Targeted)</td><td class="mono">16 Jun</td><td class="mono">386</td>
+        <td class="mono">1</td><td class="mono">$353.50</td><td class="mono">$0.92</td>
+      </tr>
+      <tr>
+        <td>Trademarks &amp; Patent CPE (Targeted)</td><td class="mono">15 Jun</td><td class="mono">1,031</td>
+        <td class="mono">3</td><td class="mono">$336.00</td><td class="mono">$0.33</td>
+      </tr>
+      <tr>
+        <td>Admin &amp; Gov (Targeted)</td><td class="mono">16 Jun</td><td class="mono">2,964</td>
+        <td class="mono">1</td><td class="mono">$294.00</td><td class="mono">$0.10</td>
+      </tr>
+      <tr>
+        <td>Employment (Targeted)</td><td class="mono">18 Jun</td><td class="mono">2,982</td>
+        <td class="mono">1</td><td class="mono">$294.00</td><td class="mono">$0.10</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- REGISTRATION TABLE -->
+<div class="table-card">
+  <div class="table-header-bar">SMS Registrations — 42 registrations · 33 unique contacts · $11,411.60 total revenue</div>
+  <table>
+    <thead><tr><th>Contact</th><th>Seminar</th><th>Attributed Campaign</th><th>Code</th><th>Revenue</th></tr></thead>
+    <tbody>
+      <tr><td>Ilona Horvath</td><td>Regulatory Investigations in 2026</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$161.00</td></tr>
+      <tr><td>Malcolm Jones</td><td>Key Developments in Patentability</td><td><span class="pill pill-blue">Trademarks</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Brett Meredith</td><td>AML Compliance and Practical Steps</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$213.50</td></tr>
+      <tr><td>Angelo Rechichi</td><td>AML Compliance and Practical Steps</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$213.50</td></tr>
+      <tr><td>Alexander Hairs</td><td>Family Provision Claims Intensive</td><td><span class="pill pill-med">Family Law</span></td><td class="mono">266SALE30</td><td class="mono">$353.50</td></tr>
+      <tr><td>Simran Gill</td><td>Character Decisions in Migration Law</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$130.20</td></tr>
+      <tr><td>Simran Gill</td><td>Visa Cancellations</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$130.20</td></tr>
+      <tr><td>Simran Gill</td><td>Employer-Sponsored Visas Masterclass</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$130.20</td></tr>
+      <tr><td>Simon Jaques</td><td>Force Majeure and Frustration</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Simon Jaques</td><td>Domestic Building Contracts Act Reforms</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$213.50</td></tr>
+      <tr><td>Thomas Holz</td><td>Conveyancing Fundamentals</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$353.50</td></tr>
+      <tr><td>Carolyn McInnes</td><td>Psychiatric and Psychological Injury</td><td><span class="pill pill-blue">Admin/Gov</span></td><td class="mono">266SALE30</td><td class="mono">$294.00</td></tr>
+      <tr><td>Emma Bekens</td><td>Trade Marks: AI Generated Logos</td><td><span class="pill pill-blue">Trademarks</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Chris Gall</td><td>Workers Compensation: Psych Claims</td><td><span class="pill pill-med">Family Law</span></td><td class="mono">266SALE30</td><td class="mono">$294.00</td></tr>
+      <tr><td>Ida Pereira</td><td>Ethics for Trade Mark &amp; Patent Attorneys</td><td><span class="pill pill-blue">Trademarks</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Peter Fagan</td><td>Family Provision Claims Intensive</td><td><span class="pill pill-blue">Construction</span></td><td class="mono">266SALE30</td><td class="mono">$353.50</td></tr>
+      <tr><td>Trina Francis</td><td>Family Lawyers Dealing With Wills &amp; Estates</td><td><span class="pill pill-med">Family Law</span></td><td class="mono">266SALE30</td><td class="mono">$353.50</td></tr>
+      <tr><td>Nicholas Simone</td><td>Retail and Commercial Leasing</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$353.50</td></tr>
+      <tr><td>Malcolm Jones</td><td>When Is a Brand "Too Close"? Trade Mark Cases</td><td><span class="pill pill-med">Family Law</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Paul Hardie</td><td>Tips and Tricks for Writing Well</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Paul Hardie</td><td>AML Compliance and Practical Steps</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$213.50</td></tr>
+      <tr><td>Marie Sambanis</td><td>Family Lawyers Dealing With Wills &amp; Estates</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$353.50</td></tr>
+      <tr><td>Ryan Gannon</td><td>Navigating Parenting Disputes in Family Law</td><td><span class="pill pill-med">Family Law</span></td><td class="mono">266SALE30</td><td class="mono">$556.50</td></tr>
+      <tr><td>Nichole Orr</td><td>Ethics &amp; Practice Mgmt for Criminal Lawyers</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$294.00</td></tr>
+      <tr><td>Joni Pirovich</td><td>Navigating AI Regulation</td><td><span class="pill pill-med">Consumer Law</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Joni Pirovich</td><td>Legal Alert! Scam Prevention Framework</td><td><span class="pill pill-med">Consumer Law</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Joni Pirovich</td><td>AI in Credit Services</td><td><span class="pill pill-med">Consumer Law</span></td><td class="mono">266SALE30</td><td class="mono">$63.00</td></tr>
+      <tr><td>Joni Pirovich</td><td>Cybersecurity &amp; Privacy in Contracts</td><td><span class="pill pill-med">Consumer Law</span></td><td class="mono">266SALE30</td><td class="mono">$63.00</td></tr>
+      <tr><td>Gulmina Miocevich</td><td>16th Annual Native Title Conference</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$556.50</td></tr>
+      <tr><td>Amelia Anthony</td><td>16th Annual Native Title Conference</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$556.50</td></tr>
+      <tr><td>Anu Nagar</td><td>16th Annual Native Title Conference</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$556.50</td></tr>
+      <tr><td>Shontelle Curtis</td><td>16th Annual Native Title Conference</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$320.50</td></tr>
+      <tr><td>Erin Flynn</td><td>16th Annual Native Title Conference</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$235.50</td></tr>
+      <tr><td>Megan Ogle</td><td>16th Annual Native Title Conference</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$556.50</td></tr>
+      <tr><td>Stuart Weir</td><td>AML/CTF Tranche 2 Reforms</td><td><span class="pill pill-med">Consumer Law</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+      <tr><td>Mohammad Hossain</td><td>Visa Cancellations</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$161.00</td></tr>
+      <tr><td>Xena Atkins</td><td>16th Annual Native Title Conference</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$556.50</td></tr>
+      <tr><td>Michelle Rubin</td><td>Contract Law Intensive</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$556.50</td></tr>
+      <tr><td>Joanne Karamesinis</td><td>Psychiatric and Psychological Injury</td><td><span class="pill pill-med">Employment</span></td><td class="mono">266SALE30</td><td class="mono">$294.00</td></tr>
+      <tr><td>James Saba</td><td>Workers Compensation: Psych Claims</td><td><span class="pill pill-gen">General Blast</span></td><td class="mono">266SALE30</td><td class="mono">$294.00</td></tr>
+      <tr><td>Cassie Lovel</td><td>16th Annual Native Title Conference</td><td><span class="pill pill-low">Native Title</span></td><td class="mono">266SALE30</td><td class="mono">$556.50</td></tr>
+      <tr><td>Joni Pirovich</td><td>Legal Ethics in a Digital and Hybrid World</td><td><span class="pill pill-med">Consumer Law</span></td><td class="mono">266SALE30</td><td class="mono">$112.00</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- INSIGHTS -->
+<div class="section-title">Key Insights</div>
+<div class="insights">
+  <div class="insight" style="--accent:#22c55e"><strong>Delivery up vs May.</strong> 90.2% delivered across the week vs 88.3% in May, with failure down to 6.3% from 10.5%. List cleaning before each send is paying off.</div>
+  <div class="insight" style="--accent:#a855f7"><strong>Native Title is the EOFY hero.</strong> The 17 Jun targeted send drove 9 registrations and $4,108 — $1.71 per delivered SMS, far above any other campaign.</div>
+  <div class="insight" style="--accent:#3b82f6"><strong>Targeted beats broadcast on yield.</strong> Native Title, Family Law and Construction all returned $0.20–$1.71 per recipient; the mass state blast returned just $0.15 despite 24.7k delivered.</div>
+  <div class="insight" style="--accent:#f97316"><strong>15 Jun carried the volume.</strong> The state blast (9 sends, ~25.8k delivered) was 47% of the week but also the lowest delivery band at ~89% and the bulk of the 381 same-day opt-outs.</div>
+  <div class="insight" style="--accent:#eab308"><strong>Link tracking is live.</strong> 354 clicks (0.64% CTR) — new this round via rwt.to/nxt.to links. Succession (33 clicks) and NSW (51) led; useful baseline to optimise against next time.</div>
+  <div class="insight" style="--accent:#ef4444"><strong>Watch the small states.</strong> General NT delivered only 86.3% — the weakest of the week. Worth checking those numbers were cleaned before the next broadcast.</div>
+</div>
+
+<footer>Legalwise Seminars &nbsp;·&nbsp; EOFY SMS Analytics Dashboard &nbsp;·&nbsp; 15-19 June 2026 &nbsp;·&nbsp; Campaign 266AU &nbsp;·&nbsp; Sinch MessageMedia &nbsp;·&nbsp; 19 broadcasts</footer>
+
+<script>
+const gc='rgba(255,255,255,0.05)', lc='#7b82a0';
+Chart.defaults.color=lc; Chart.defaults.font.family='DM Sans';
+
+// Delivered vs Undelivered by day
+new Chart(document.getElementById('deliveryChart'),{
+  type:'bar',
+  data:{
+    labels:['Mon 15','Tue 16','Wed 17','Thu 18','Fri 19'],
+    datasets:[
+      {label:'Delivered',data:[25755,11916,6872,6147,4423],backgroundColor:'#22c55e',borderRadius:3,stack:'a'},
+      {label:'Undelivered',data:[2425,1024,559,477,435],backgroundColor:'#ef4444',borderRadius:3,stack:'a'}
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}},stacked:true},y:{grid:{color:gc},ticks:{font:{size:9}},stacked:true}}}
+});
+
+// Donut
+new Chart(document.getElementById('donutChart'),{
+  type:'doughnut',
+  data:{labels:['Delivered','Undelivered','Opt-outs'],datasets:[{data:[55131,3841,1153],backgroundColor:['#22c55e','#f97316','#374151'],borderWidth:0}]},
+  options:{responsive:true,cutout:'70%',plugins:{legend:{display:false}}}
+});
+
+// Daily delivery rate
+new Chart(document.getElementById('rateChart'),{
+  type:'bar',
+  data:{labels:['15 Jun','16 Jun','17 Jun','18 Jun','19 Jun'],datasets:[{data:[89.5,90.6,91.1,91.6,89.5],backgroundColor:['#f97316','#22c55e','#22c55e','#22c55e','#f97316'],borderRadius:4}]},
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{callback:v=>v+'%',font:{size:9}},min:85,max:94}}}
+});
+
+// Daily volume
+new Chart(document.getElementById('volumeChart'),{
+  type:'line',
+  data:{
+    labels:['Sat 13','Sun 14','Mon 15','Tue 16','Wed 17','Thu 18','Fri 19'],
+    datasets:[{label:'Outbound',data:[0,0,28778,13151,7544,6714,4941],borderColor:'#0fb8a0',backgroundColor:'rgba(15,184,160,0.07)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#0fb8a0',borderWidth:2}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{maxRotation:45,font:{size:9}}},y:{grid:{color:gc},ticks:{font:{size:9}}}}}
+});
+
+// Trend
+new Chart(document.getElementById('trendChart'),{
+  type:'line',
+  data:{
+    labels:['Sat 13','Sun 14','Mon 15','Tue 16','Wed 17','Thu 18','Fri 19'],
+    datasets:[
+      {label:'Outbound',data:[0,0,28778,13151,7544,6714,4941],borderColor:'#0fb8a0',backgroundColor:'transparent',tension:0.3,pointRadius:3,borderWidth:2},
+      {label:'Inbound',data:[0,0,430,340,200,110,115],borderColor:'#3b82f6',backgroundColor:'transparent',tension:0.3,pointRadius:3,borderWidth:2,borderDash:[4,4]}
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{font:{size:9}}}}}
+});
+
+// Delivered by group
+new Chart(document.getElementById('groupChart'),{
+  type:'bar',
+  data:{
+    labels:['General\n(8 sends)','Targeted\n(11 sends)'],
+    datasets:[{label:'Delivered',data:[24724,30389],backgroundColor:['#7b82a0','#3b82f6'],borderRadius:4}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.raw.toLocaleString()+' delivered'}}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{callback:v=>v.toLocaleString(),font:{size:9}}}}}
+});
+
+// CTR by group
+new Chart(document.getElementById('ctrChart'),{
+  type:'bar',
+  data:{
+    labels:['General','Targeted'],
+    datasets:[{label:'Click Rate %',data:[0.69,0.61],backgroundColor:['#7b82a0','#3b82f6'],borderRadius:4}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.raw+'% CTR'}}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{callback:v=>v+'%',font:{size:9}},min:0,max:0.9}}}
+});
+
+// Campaign revenue
+new Chart(document.getElementById('campaignRevChart'),{
+  type:'bar',
+  data:{
+    labels:['Native Title','General\nState Blast','Family Law','Consumer\nLaw','Construction','Trademarks','Admin/Gov','Employment'],
+    datasets:[{label:'Revenue ($)',data:[4108.5,3782.1,1669.5,574,353.5,336,294,294],backgroundColor:['#0fb8a0','#7b82a0','#a855f7','#3b82f6','#f97316','#eab308','#22c55e','#ef4444'],borderRadius:4}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()}}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}}}}}
+});
+
+// Registrations by campaign
+new Chart(document.getElementById('campaignRegChart'),{
+  type:'bar',
+  data:{
+    labels:['General\nState Blast','Native Title','Consumer\nLaw','Family Law','Trademarks','Construction','Admin/Gov','Employment'],
+    datasets:[{label:'Registrations',data:[16,9,6,5,3,1,1,1],backgroundColor:['#7b82a0','#0fb8a0','#3b82f6','#a855f7','#eab308','#f97316','#22c55e','#ef4444'],borderRadius:4}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{grid:{color:gc},ticks:{stepSize:2,font:{size:9}}}}}
+});
+
+// Revenue by day
+new Chart(document.getElementById('revDayChart'),{
+  type:'bar',
+  data:{
+    labels:['Mon 15','Tue 16','Wed 17','Thu 18','Fri 19'],
+    datasets:[
+      {label:'Revenue ($)',type:'bar',data:[2123.1,2663.5,4812,1813,0],backgroundColor:'#22c55e',borderRadius:4,yAxisID:'y'},
+      {label:'Registrations',type:'line',data:[11,11,15,5,0],borderColor:'#3b82f6',backgroundColor:'transparent',tension:0.3,pointRadius:4,borderWidth:2,yAxisID:'y1'}
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}},scales:{x:{grid:{color:gc},ticks:{font:{size:9}}},y:{position:'left',grid:{color:gc},ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:9}},min:0,max:18}}}
+});
+
+// Top seminars
+new Chart(document.getElementById('seminarChart'),{
+  type:'bar',
+  data:{
+    labels:['Native Title\nConference','Family Lawyers /\nWills & Estates','Family Provision\nClaims','AML\nCompliance','Psych\nInjury','Workers Comp:\nPsych'],
+    datasets:[{label:'Revenue ($)',data:[3895,707,707,640.5,588,588],backgroundColor:'#0fb8a0',borderRadius:4}]
+  },
+  options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()}}},scales:{x:{grid:{color:gc},ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:9}}},y:{grid:{color:gc},ticks:{font:{size:9}}}}}
+});
+</script>
+</body>
+</html>
